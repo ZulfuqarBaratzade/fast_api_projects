@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List</title>
+    <style>
+        .container{
+            border: 1px solid;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            /* justify-content: center; */
+        }
+        #todoForm{
+            display: flex;
+            flex-direction: column;
+            border: 1px solid;
+            width: 500px;
+            height: 400px;
+            align-items: center;
+            justify-content: center;
+        }
+        #todoForm label{
+            padding: 10px;
+        }
+        #todoForm input{
+            width: 300px;
+            padding: 10px;
+            outline: none;
+            border: 1px solid #ccc;
+
+        }
+        #todoForm button{
+            padding: 10px;
+            width: 200px;
+            margin-top: 10px;
+            border: none;
+            font-size: 1em;
+            font-weight: 600;
+            color: #fff;
+            background-color: blue;
+            border-radius: 12px;
+        }
+        .result{
+            border: 1px solid;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+    <h1>Todo List</h1>
+    <form id="todoForm">
+        <label for="name">Todo Name:</label>
+        <input type="text" id="name" name="name" required>
+        
+        <label for="description">Description:</label>
+        <input type="text" id="description" name="description">
+
+        <label for="price">Price:</label>
+        <input type="number" id="price" name="price" required>
+
+        <label for="tax">Tax:</label>
+        <input type="number" id="tax" name="tax">
+
+        <button type="submit">Add</button>
+    </form>
+
+    <h2>Todo List</h2>
+    <div class="result"></div>
+</div>
+
+    <script>
+        document.getElementById("todoForm").addEventListener("submit", async function(event) {
+            event.preventDefault(); // Default form submit-i bloklayırıq
+
+            let name = document.getElementById("name").value.trim();
+            let description = document.getElementById("description").value.trim();
+            let price = document.getElementById("price").value.trim();
+            let tax = document.getElementById("tax").value.trim();
+
+            if (!name || !price) {
+                alert("Name və Price tələb olunur!");
+                return;
+            }
+
+            let data = {
+                name: name,
+                description: description || null,
+                price: parseFloat(price),
+                tax: tax ? parseFloat(tax) : null
+            };
+
+            try {
+                let response = await fetch("/add", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                let result = await response.json();
+                
+                if (response.ok) {
+                    addTodoToUI(result);
+                } else {
+                    alert("Xəta baş verdi! " + result.detail);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Bağlantı xətası!");
+            }
+
+            document.getElementById("todoForm").reset();
+        });
+
+        function addTodoToUI(todo) {
+            let resultDiv = document.querySelector(".result");
+
+            let todoItem = document.createElement("div");
+            todoItem.innerHTML = `
+                <p>✅ ${todo.name} - $${todo.price} <button onclick="deleteTodo('${todo.name}', this)">Delete</button></p>
+            `;
+            resultDiv.appendChild(todoItem);
+        }
+
+        async function deleteTodo(name, buttonElement) {
+            let confirmDelete = confirm(`"${name}" todo-nu silmək istədiyinizə əminsiniz?`);
+            if (!confirmDelete) return;
+
+            try {
+                let response = await fetch(`/delete/${name}`, {
+                    method: "DELETE"
+                });
+
+                if (response.ok) {
+                    buttonElement.parentElement.remove();
+                } else {
+                    let result = await response.json();
+                    alert("Xəta baş verdi! " + result.detail);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Bağlantı xətası!");
+            }
+        }
+    </script>
+</body>
+</html>
